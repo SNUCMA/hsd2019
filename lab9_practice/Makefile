@@ -1,2 +1,2 @@
-all: main.c input.txt
+all: main.c
 	gcc main.c && sudo ./a.out
