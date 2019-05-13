@@ -61,7 +61,6 @@ if __name__ == "__main__":
     label = labels[i,]
 
     n_correct += (label == prediction)
-    print(n_correct)
   
   model_stats = {
     "total_time": time.time()-start_time,
