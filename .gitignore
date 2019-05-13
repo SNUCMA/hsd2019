@@ -1,0 +1,7 @@
+**/*.pyc
+*.o
+*.so
+*.swp
+*.swo
+lab2/proto/caffe.pb.cc
+lab2/proto/caffe.pb.h
