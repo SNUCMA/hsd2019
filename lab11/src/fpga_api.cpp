@@ -111,7 +111,7 @@ void FPGA::convLowering(const std::vector<std::vector<std::vector<std::vector<fl
   int input_channel = cnn_weights[0].size();
   int conv_height = cnn_weights[0][0].size();
   int conv_width = cnn_weights[0][0][0].size();
-  //int input_channel = cnn_weights.size();
+  //int input_channel = inputs.size();
   int input_height = inputs[0].size();
   int input_width = inputs[0][0].size();
 
