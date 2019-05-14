@@ -1,21 +1,21 @@
-#include"fpga_api.h"
-#include<stdio.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<sys/mman.h>
-#include<cstring>
+#include "fpga_api.h"
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <cstring>
 
-#define min(x,y) (((x)<(y))?(x):(y))
+#define min(x, y) (((x) < (y)) ? (x) : (y))
 
 FPGA::FPGA(off_t data_addr, off_t output_addr, int m_size, int v_size)
 {
   m_size_ = m_size;
   v_size_ = v_size;
-  data_size_ = (m_size_+1)*v_size_*sizeof(float); // fpga bram data size
+  data_size_ = (m_size_ + 1) * v_size_ * sizeof(float); // fpga bram data size
 
   fd_ = open("/dev/mem", O_RDWR);
-  data_ = static_cast<float*>(mmap(NULL, data_size_, PROT_READ|PROT_WRITE, MAP_SHARED, fd_, data_addr));
-  output_ = static_cast<unsigned int*>(mmap(NULL, sizeof(unsigned int), PROT_READ|PROT_WRITE, MAP_SHARED,fd_, output_addr));
+  data_ = static_cast<float *>(mmap(NULL, data_size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, data_addr));
+  output_ = static_cast<unsigned int *>(mmap(NULL, sizeof(unsigned int), PROT_READ | PROT_WRITE, MAP_SHARED, fd_, output_addr));
 
   num_block_call_ = 0;
 }
@@ -27,12 +27,12 @@ FPGA::~FPGA()
   close(fd_);
 }
 
-float* FPGA::matrix(void)
+float *FPGA::matrix(void)
 {
   return data_ + v_size_;
 }
 
-float* FPGA::vector(void)
+float *FPGA::vector(void)
 {
   return data_;
 }
@@ -47,33 +47,34 @@ int FPGA::num_block_call(void)
   return num_block_call_;
 }
 
-const float* __attribute__((optimize("O0"))) FPGA::blockMV()
+const float *__attribute__((optimize("O0"))) FPGA::blockMV()
 {
   num_block_call_ += 1;
 
   // fpga version
   *output_ = 0x5555;
-  while(*output_ == 0x5555);
+  while (*output_ == 0x5555)
+    ;
 
-  return data_;    
+  return data_;
 }
 
-void FPGA::largeMV(const float* large_mat, const float* input, float* output, int num_input, int num_output)
+void FPGA::largeMV(const float *large_mat, const float *input, float *output, int num_input, int num_output)
 {
-  float* vec = this->vector();
-  float* mat = this->matrix();
+  float *vec = this->vector();
+  float *mat = this->matrix();
 
-  // 0) Initialize output vector		
-  for(int i = 0; i < num_output; ++i)
+  // 0) Initialize output vector
+  for (int i = 0; i < num_output; ++i)
     output[i] = 0;
 
-  for(int i = 0; i < num_output; i += m_size_)
+  for (int i = 0; i < num_output; i += m_size_)
   {
-    for(int j = 0; j < num_input; j += v_size_)
-    {			
+    for (int j = 0; j < num_input; j += v_size_)
+    {
       // 0) Initialize input vector
-      int block_row = min(m_size_, num_output-i);
-      int block_col = min(v_size_, num_input-j);
+      int block_row = min(m_size_, num_output - i);
+      int block_col = min(v_size_, num_input - j);
 
       // 1) Assign a vector
       // IMPLEMENT THIS
@@ -82,19 +83,20 @@ void FPGA::largeMV(const float* large_mat, const float* input, float* output, in
       // IMPLEMENT THIS
 
       // 3) Call a function `blockMV() to execute MV multiplication
-      const float* ret = this->blockMV();
+      const float *ret = this->blockMV();
 
       // 4) Accumulate intermediate results
-      for(int row = 0; row < block_row; ++row)
+      for (int row = 0; row < block_row; ++row)
         output[i + row] += ret[row];
-    } 
+    }
   }
 }
 
-void FPGA::convLowering(const std::vector<std::vector<std::vector<std::vector<float>>>>& cnn_weights,
-    std::vector<std::vector<float>>& new_weights,
-    const std::vector<std::vector<std::vector<float>>>& inputs,
-    std::vector<std::vector<float>>& new_inputs) {
+void FPGA::convLowering(const std::vector<std::vector<std::vector<std::vector<float>>>> &cnn_weights,
+                        std::vector<std::vector<float>> &new_weights,
+                        const std::vector<std::vector<std::vector<float>>> &inputs,
+                        std::vector<std::vector<float>> &new_inputs)
+{
   /*
    * Arguments:
    *
