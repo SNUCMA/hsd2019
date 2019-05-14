@@ -13,3 +13,4 @@ lab11/proto/caffe.pb.cc
 lab11/proto/caffe.pb.h
 lab11/data
 lab11/pretrained_weights/*.caffemodel
+lab11/pretrained_weights/*.txt
