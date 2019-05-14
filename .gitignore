@@ -3,5 +3,13 @@
 *.so
 *.swp
 *.swo
+
 lab2/proto/caffe.pb.cc
 lab2/proto/caffe.pb.h
+lab2/data
+lab2/pretrained_weights/*.caffemodel
+
+lab11/proto/caffe.pb.cc
+lab11/proto/caffe.pb.h
+lab11/data
+lab11/pretrained_weights/*.caffemodel
