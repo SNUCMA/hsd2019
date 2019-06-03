@@ -47,7 +47,7 @@ int FPGA::num_block_call(void)
   return num_block_call_;
 }
 
-const float *__attribute__((optimize("O0"))) FPGA::blockMV()
+const float *__attribute__((optimize("O0"))) FPGA::blockMV(Compute* comp)
 {
   num_block_call_ += 1;
 
@@ -59,7 +59,7 @@ const float *__attribute__((optimize("O0"))) FPGA::blockMV()
   return data_;
 }
 
-void FPGA::largeMV(const float *large_mat, const float *input, float *output, int num_input, int num_output)
+void FPGA::largeMV(const float *large_mat, const float *input, float *output, int num_input, int num_output, Compute* comp)
 {
   float *vec = this->vector();
   float *mat = this->matrix();
@@ -83,7 +83,7 @@ void FPGA::largeMV(const float *large_mat, const float *input, float *output, in
       // IMPLEMENT THIS
 
       // 3) Call a function `blockMV() to execute MV multiplication
-      const float *ret = this->blockMV();
+      const float *ret = this->blockMV(comp);
 
       // 4) Accumulate intermediate results
       for (int row = 0; row < block_row; ++row)
