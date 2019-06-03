@@ -17,7 +17,9 @@ T *vectorToArray(vector<vector<T>> const &v)
   return rv;
 }
 
-TFDNN::TFDNN(std::string model, FPGA *dev) : CommonDNN(dev)
+TFDNN::TFDNN(std::string model, FPGA *dev) : TFDNN(model, dev, false, 32, 32) { }
+
+TFDNN::TFDNN(std::string model, FPGA *dev, bool quantized, int weight_bits, int act_bits) : CommonDNN(dev, quantized, weight_bits, act_bits)
 {
   fstream fin(model.c_str(), ios::in | ios::binary);
   int num_layers;
@@ -41,6 +43,10 @@ TFDNN::TFDNN(std::string model, FPGA *dev) : CommonDNN(dev)
       fin >> output_size;
       int out_idx = regDataIdx(layer_name, output_size);
 
+      float act_min, act_max;
+      float weight_min, weight_max;
+      if(quantized) fin >> act_min >> act_max >> weight_min >> weight_max;
+
       float *raw_weights_ = new float[output_size * input_size];
       memset(raw_weights_, 0, sizeof(float) * output_size * input_size);
       for (int onode = 0; onode < output_size; onode++)
@@ -51,7 +57,7 @@ TFDNN::TFDNN(std::string model, FPGA *dev) : CommonDNN(dev)
       const float *bias = nullptr;
 
       // append new op
-      ops_.push_back(move(unique_ptr<Op>(new MatVecOp(dev_, weight, bias, input_size, output_size))));
+      ops_.push_back(move(unique_ptr<Op>(new MatVecOp(dev_, weight, bias, input_size, output_size, quantized, act_bits, act_min, act_max, weight_bits, weight_min, weight_max))));
       op_pair_.push_back({in_idx, out_idx});
     }
     else if (layer_type.compare("slim.layers.conv2d") == 0)
@@ -67,6 +73,9 @@ TFDNN::TFDNN(std::string model, FPGA *dev) : CommonDNN(dev)
       fin >> input_channel >> input_height >> input_width;
       int conv_channel, conv_height, conv_width;
       fin >> conv_channel >> conv_height >> conv_width;
+      float act_min, act_max;
+      float weight_min, weight_max;
+      if(quantized) fin >> act_min >> act_max >> weight_min >> weight_max;
 
       vector<vector<vector<vector<float>>>> raw_weights_(conv_channel, vector<vector<vector<float>>>(input_channel, vector<vector<float>>(conv_height, vector<float>(conv_width))));
       for (int ic = 0; ic < conv_channel; ic++)
@@ -78,7 +87,10 @@ TFDNN::TFDNN(std::string model, FPGA *dev) : CommonDNN(dev)
       // append new op
       ops_.push_back(move(unique_ptr<Op>(new ConvOp(dev_, raw_weights_, input_size, output_size,
                                                     input_channel, input_height, input_width,
-                                                    conv_channel, conv_height, conv_width))));
+                                                    conv_channel, conv_height, conv_width,
+                                                    quantized,
+                                                    act_bits, act_min, act_max,
+                                                    weight_bits, weight_min, weight_max))));
       op_pair_.push_back({in_idx, out_idx});
     }
     else if (layer_type.compare("tf.nn.relu") == 0)

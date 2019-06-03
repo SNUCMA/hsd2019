@@ -2,6 +2,7 @@
 #define _FPGA_API_H_
 #include <sys/types.h>
 #include <vector>
+#include "compute.h"
 
 // matrix vector multiplicator
 // matrix M: M_SIZE by V_SIZE
@@ -15,6 +16,9 @@ private:
   int fd_;
   float *data_;
   unsigned int *output_;
+  char *qvec_;
+  char *qmat_;
+  short *qout_;
 
   int m_size_;
   int v_size_;
@@ -32,13 +36,13 @@ public:
   int num_block_call(void);
 
   // perform matrix multiplication and return output array pointer
-  const float *blockMV();
+  const float *blockMV(Compute* comp);
 
   // Input vector size: num_input
   // Matrix size: num_output * num_input
   // Output vector size: num_output
   // O = M * I
-  void largeMV(const float *mat, const float *input, float *output, int num_input, int num_output);
+  void largeMV(const float *mat, const float *input, float *output, int num_input, int num_output, Compute* comp);
   void convLowering(const std::vector<std::vector<std::vector<std::vector<float>>>> &cnn_weights,
                     std::vector<std::vector<float>> &new_weights,
                     const std::vector<std::vector<std::vector<float>>> &inputs,

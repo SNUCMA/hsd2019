@@ -16,6 +16,9 @@ parser.add_argument('--m_size', type=int, default=16, help='The number of row in
 parser.add_argument('--v_size', type=int, default=16, help='The number of col in the block operation')
 parser.add_argument('--run_type', type=str, default='cpu', help='The type of execution e.g. cpu, fpga')
 parser.add_argument('--network', type=str, default='cnn', help='The type of execution e.g. cnn, mlp')
+parser.add_argument('--quantized', dest='quantized', action='store_true', help='Use quantization')
+parser.add_argument('--w_bits', type=int, default=8, help='The number of bits for weights')
+parser.add_argument('--a_bits', type=int, default=8, help='The number of bits for activations')
 
 
 def main(args):
@@ -31,10 +34,16 @@ def main(args):
 
   print('[*] Load the network...')
   if args.network == 'mlp': # Lab 2
+    if args.quantized:
+      print('[!] MLP does not support quantization')
+      return
     model_path = os.path.join('./pretrained_weights', 'mlp_iter_10000.caffemodel')
     net = MLP(model_path, args)
-  elif args.network == 'cnn': # Lab 11
-    model_path = os.path.join('./pretrained_weights', 'cnn_weights.txt')
+  elif args.network == 'cnn':
+    if args.quantized: # Lab 14
+      model_path = os.path.join('./pretrained_weights', 'quantized_cnn_weights.txt')
+    else: # Lab 11
+      model_path = os.path.join('./pretrained_weights', 'cnn_weights.txt')
     net = CNN(model_path, args)
   else:
     raise
@@ -70,4 +79,9 @@ def main(args):
 
 if __name__ == '__main__':
   args = parser.parse_args()
+  if args.quantized:
+    assert args.w_bits <= 8 and args.a_bits <= 8
+  else:
+    args.w_bits = 32
+    args.a_bits = 32
   main(args)

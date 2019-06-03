@@ -25,8 +25,13 @@ protected:
   int regDataIdx(std::string name, int size); // register internal data space and return the index of data
   int getDataIdx(std::string name);           // find the index of data. return -1 if the data is not yet registered
 
+  bool quantized_;
+  int weight_bits_;
+  int act_bits_;
+
 public:
   CommonDNN(FPGA *dev);
+  CommonDNN(FPGA *dev, bool quantized, int weight_bits, int act_bits);
   const float *run(const float *input);
   FPGA *getDev();
   int total_block_call();

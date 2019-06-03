@@ -42,6 +42,13 @@ void *getTFNet(void *network, int m_size, int v_size)
   return new TFDNN(std::string(net_char), dev);
 }
 
+void *getTFQuantizedNet(void *network, int m_size, int v_size, int w_bits, int a_bits)
+{
+  char *net_char = static_cast<char *>(network);
+  FPGA *dev = new FPGA(0x40000000, 0x43c00000, m_size, v_size);
+  return new TFDNN(std::string(net_char), dev, true, w_bits, a_bits);
+}
+
 void delTFNet(void *net_ptr)
 {
   TFDNN *net = static_cast<TFDNN *>(net_ptr);

@@ -8,7 +8,8 @@
 
 using namespace std;
 
-CommonDNN::CommonDNN(FPGA *dev) : dev_(dev) {}
+CommonDNN::CommonDNN(FPGA *dev) : dev_(dev), quantized_(false), weight_bits_(32), act_bits_(32) {}
+CommonDNN::CommonDNN(FPGA *dev, bool quantized, int weight_bits, int act_bits) : dev_(dev), quantized_(quantized), weight_bits_(weight_bits), act_bits_(act_bits) {}
 
 int CommonDNN::regDataIdx(string name, int size)
 {

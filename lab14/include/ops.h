@@ -1,5 +1,6 @@
 #ifndef _OPS_H_
 #define _OPS_H_
+#include "compute.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -21,13 +22,25 @@ struct MatVecOp : Op
   const float *bias_;
   int input_size_;
   int output_size_;
+  bool quantized_;
+  int act_bits_;
+  float act_min_, act_max_;
+  int weight_bits_;
+  float weight_min_, weight_max_;
 
   MatVecOp(FPGA *dev, const float *weights, const float *bias, int input_size, int output_size)
-      : dev_(dev), weights_(weights), bias_(bias), input_size_(input_size), output_size_(output_size) {}
+      : dev_(dev), weights_(weights), bias_(bias), input_size_(input_size), output_size_(output_size),
+        quantized_(false), act_bits_(32), weight_bits_(32) {}
+  MatVecOp(FPGA *dev, const float *weights, const float *bias, int input_size, int output_size, bool quantized, int act_bits, float act_min, float act_max, int weight_bits, float weight_min, float weight_max)
+      : dev_(dev), weights_(weights), bias_(bias), input_size_(input_size), output_size_(output_size),
+        quantized_(quantized),
+        act_bits_(act_bits), act_min_(act_min), act_max_(act_max),
+        weight_bits_(weight_bits), weight_min_(weight_min), weight_max_(weight_max) {}
 
   void run(const float *src, float *dst)
   {
-    dev_->largeMV(weights_, src, dst, input_size_, output_size_);
+    Compute *comp = new Compute(quantized_, act_bits_, act_min_, act_max_, weight_bits_, weight_min_, weight_max_);
+    dev_->largeMV(weights_, src, dst, input_size_, output_size_, comp);
 
     if (bias_ != nullptr)
     {
@@ -47,9 +60,32 @@ struct ConvOp : Op
   int output_size_;
   int input_channel_, input_height_, input_width_;
   int conv_channel_, conv_height_, conv_width_;
+  bool quantized_;
+  int act_bits_;
+  float act_min_, act_max_;
+  int weight_bits_;
+  float weight_min_, weight_max_;
 
-  ConvOp(FPGA *dev, vector<vector<vector<vector<float>>>> raw_weights, int input_size, int output_size, int input_channel, int input_height, int input_width, int conv_channel, int conv_height, int conv_width)
-      : dev_(dev), raw_weights_(raw_weights), input_size_(input_size), output_size_(output_size), input_channel_(input_channel), input_height_(input_height), input_width_(input_width), conv_channel_(conv_channel), conv_height_(conv_height), conv_width_(conv_width) {}
+  ConvOp(FPGA *dev, vector<vector<vector<vector<float>>>> raw_weights,
+        int input_size, int output_size, int input_channel, int input_height, int input_width,
+        int conv_channel, int conv_height, int conv_width)
+      : dev_(dev), raw_weights_(raw_weights), input_size_(input_size), output_size_(output_size),
+        input_channel_(input_channel), input_height_(input_height), input_width_(input_width),
+        conv_channel_(conv_channel), conv_height_(conv_height), conv_width_(conv_width),
+        quantized_(false), act_bits_(32), weight_bits_(32) {}
+
+  ConvOp(FPGA *dev, vector<vector<vector<vector<float>>>> raw_weights,
+        int input_size, int output_size, int input_channel, int input_height, int input_width,
+        int conv_channel, int conv_height, int conv_width,
+        bool quantized,
+        int act_bits, float act_min, float act_max,
+        int weight_bits, float weight_min, float weight_max)
+      : dev_(dev), raw_weights_(raw_weights), input_size_(input_size), output_size_(output_size),
+        input_channel_(input_channel), input_height_(input_height), input_width_(input_width),
+        conv_channel_(conv_channel), conv_height_(conv_height), conv_width_(conv_width),
+        quantized_(quantized),
+        act_bits_(act_bits), act_min_(act_min), act_max_(act_max),
+        weight_bits_(weight_bits), weight_min_(weight_min), weight_max_(weight_max) {}
 
   template <typename T>
   T *vectorToArray(vector<vector<T>> const &v)
@@ -66,6 +102,7 @@ struct ConvOp : Op
     vector<vector<vector<float>>> src_(input_channel_, vector<vector<float>>(input_height_, vector<float>(input_width_)));
     vector<vector<float>> new_src_(new_weights_[0].size(), vector<float>((input_height_ - conv_height_ + 1) * (input_width_ - conv_width_ + 1)));
 
+    Compute *comp = new Compute(quantized_, act_bits_, act_min_, act_max_, weight_bits_, weight_min_, weight_max_);
     for (int i = 0; i < input_channel_; i++)
       for (int j = 0; j < input_height_; j++)
         for (int k = 0; k < input_width_; k++)
@@ -81,7 +118,7 @@ struct ConvOp : Op
         vec_src[j] = new_src_[j][i];
 
       float *new_src = &vec_src[0];
-      dev_->largeMV(weights_, new_src, dst + i * conv_channel_, conv_height_ * conv_width_ * input_channel_, conv_channel_);
+      dev_->largeMV(weights_, new_src, dst + i * conv_channel_, conv_height_ * conv_width_ * input_channel_, conv_channel_, comp);
     }
   }
 };

@@ -33,7 +33,10 @@ class CNN(Network):
   def __init__(self, net_path, args):
     super(CNN, self).__init__(args)
 
-    self.net = self.lib.getTFNet(ctypes.c_char_p(net_path.encode("utf-8")), self.m_size, self.v_size)
+    if args.quantized:
+      self.net = self.lib.getTFQuantizedNet(ctypes.c_char_p(net_path.encode("utf-8")), self.m_size, self.v_size, args.w_bits, args.a_bits)
+    else:
+      self.net = self.lib.getTFNet(ctypes.c_char_p(net_path.encode("utf-8")), self.m_size, self.v_size)
 
   def __del__(self):
     self.lib.delTFNet(self.net)
