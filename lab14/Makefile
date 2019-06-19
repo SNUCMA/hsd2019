@@ -1,4 +1,4 @@
-CPP = g++
+CPP = g++ -fsigned-char
 CPPFLAGS = -std=c++11
 PROTO = ./proto
 SRC = ./src
